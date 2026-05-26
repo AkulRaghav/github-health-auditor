@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -65,7 +65,7 @@ model Audit {
   repoUrl      String
   overallScore Int
   grade        String
-  categories   String   // JSON string
+  categories   String
   timestamp    DateTime @default(now())
   shareId      String?  @unique
 

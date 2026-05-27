@@ -1,5 +1,6 @@
 "use client";
 
+import { signIn } from "next-auth/react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import FloatingCodeCanvas from "@/components/FloatingCodeCanvas";
@@ -7,8 +8,7 @@ import { GitBranch, Shield, History, Share2 } from "lucide-react";
 
 export default function LoginPage() {
   const handleSignIn = () => {
-    // Direct redirect to our custom GitHub OAuth endpoint
-    window.location.href = "/api/auth/github";
+    signIn("github", { callbackUrl: "/" });
   };
 
   return (

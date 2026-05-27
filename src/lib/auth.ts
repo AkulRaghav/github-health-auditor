@@ -1,6 +1,9 @@
 import { getServerSession, type NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 
+const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://");
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
@@ -11,25 +14,19 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
+  useSecureCookies,
   cookies: {
-    csrfToken: {
-      name: "next-auth.csrf-token",
+    sessionToken: {
+      name: `${cookiePrefix}next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
-      },
-    },
-    callbackUrl: {
-      name: "next-auth.callback-url",
-      options: {
-        sameSite: "lax",
-        path: "/",
-        secure: true,
+        secure: useSecureCookies,
       },
     },
   },
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async jwt({ token, account }) {
       if (account) {

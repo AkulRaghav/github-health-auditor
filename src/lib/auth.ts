@@ -1,43 +1,37 @@
 import { getServerSession, type NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 
-const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith("https://");
-const cookiePrefix = useSecureCookies ? "__Secure-" : "";
-
 export const authOptions: NextAuthOptions = {
   providers: [
     GitHubProvider({
       clientId: process.env.GITHUB_ID!,
       clientSecret: process.env.GITHUB_SECRET!,
+      authorization: {
+        params: {
+          scope: "read:user user:email repo",
+        },
+      },
     }),
   ],
   session: {
     strategy: "jwt",
-  },
-  useSecureCookies,
-  cookies: {
-    sessionToken: {
-      name: `${cookiePrefix}next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: useSecureCookies,
-      },
-    },
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
-    async jwt({ token, account }) {
+    async jwt({ token, account, profile }) {
+      // On initial sign in, save the access token and profile info
       if (account) {
         token.accessToken = account.access_token;
+        token.id = profile?.sub || account.providerAccountId;
       }
       return token;
     },
     async session({ session, token }) {
+      // Pass access token to the client session
+      (session as any).accessToken = token.accessToken;
       if (session.user) {
-        (session.user as { id?: string }).id = token.sub || "";
-        (session as { accessToken?: string }).accessToken = token.accessToken as string;
+        (session.user as any).id = token.id || token.sub;
       }
       return session;
     },

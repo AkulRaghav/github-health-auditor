@@ -1,17 +1,24 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET() {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = (session.user as { id?: string }).id;
+
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const audits = await prisma.audit.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       orderBy: { timestamp: "desc" },
       take: 50,
       select: {
@@ -28,7 +35,6 @@ export async function GET() {
 
     return NextResponse.json({ audits });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch history";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
